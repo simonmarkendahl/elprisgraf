@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Elpris SE3 – Idag</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
   <style>
     body {
       font-family: sans-serif;
@@ -37,7 +37,10 @@
 
       try {
         const response = await fetch(url);
+        if (!response.ok) throw new Error("API-svar misslyckades");
+
         const data = await response.json();
+        if (!Array.isArray(data) || data.length === 0) throw new Error("Ingen data tillgänglig");
 
         const labels = data.map(p => p.time);
         const prices = data.map(p => p.SEK_per_kWh * 100);
@@ -85,7 +88,7 @@
           }
         });
       } catch (error) {
-        document.getElementById("chart-container").innerHTML = "<p style='text-align:center;color:red;'>Kunde inte hämta data från elprisetjustnu.se.</p>";
+        document.getElementById("chart-container").innerHTML = `<p style='text-align:center;color:red;'>Kunde inte hämta data: ${error.message}</p>`;
         console.error("Fel vid hämtning av data:", error);
       }
     }
