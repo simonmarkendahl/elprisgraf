@@ -2,7 +2,7 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8">
-  <title>Elprisgraf SE3 – Kvartsvis</title>
+  <title>Elpris SE3 – Dagens Spotpriser</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -21,10 +21,72 @@
   </style>
 </head>
 <body>
-  <h1>Elpris SE3 – 12 oktober 2025 (kvartsvis)</h1>
+  <h1>Elpris SE3 – Spotpriser idag</h1>
   <div id="chart-container">
     <canvas id="priceChart"></canvas>
   </div>
 
   <script>
-    const labels = 
+    async function fetchPrices() {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      const url = `https://www.elprisetjustnu.se/api/v1/prices/${yyyy}/${mm}-${dd}_SE3.json`;
+
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        const labels = data.map(p => p.time);
+        const prices = data.map(p => p.SEK_per_kWh);
+
+        new Chart(document.getElementById("priceChart"), {
+          type: "line",
+          data: {
+            labels: labels,
+            datasets: [{
+              label: "SE3 Spotpris (öre/kWh)",
+              data: prices.map(p => p * 100),
+              borderColor: "blue",
+              backgroundColor: "rgba(0, 0, 255, 0.1)",
+              fill: true,
+              tension: 0.3,
+              pointRadius: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: {
+                beginAtZero: false,
+                title: {
+                  display: true,
+                  text: "Pris (öre/kWh)"
+                }
+              },
+              x: {
+                title: {
+                  display: true,
+                  text: "Tidpunkt"
+                }
+              }
+            },
+            plugins: {
+              legend: {
+                display: true,
+                position: "top"
+              }
+            }
+          }
+        });
+      } catch (error) {
+        document.getElementById("chart-container").innerHTML = "<p style='text-align:center;color:red;'>Kunde inte hämta data från elprisetjustnu.se.</p>";
+        console.error("Fel vid hämtning av data:", error);
+      }
+    }
+
+    fetchPrices();
+  </script>
+</body>
+</html>
