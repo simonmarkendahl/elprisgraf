@@ -1,90 +1,30 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-  <meta charset="UTF-8" />
-  <title>Elprisgraf SE3</title>
+  <meta charset="UTF-8">
+  <title>Elprisgraf SE3 – Kvartsvis</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      margin: 0;
-      padding: 0;
-      background: #fff;
       font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f9f9f9;
     }
     h1 {
       text-align: center;
-      margin-top: 20px;
     }
     #chart-container {
-      width: 90%;
       max-width: 1000px;
       margin: auto;
     }
   </style>
 </head>
 <body>
-  <h1>Day-ahead elpriser – SE3</h1>
+  <h1>Elpris SE3 – 12 oktober 2025 (kvartsvis)</h1>
   <div id="chart-container">
     <canvas id="priceChart"></canvas>
   </div>
 
   <script>
-    async function fetchPrices() {
-      try {
-        const response = await fetch("https://data.nordpoolgroup.com/auction/day-ahead/prices?deliveryDate=today&currency=SEK&aggregation=DeliveryPeriod&deliveryAreas=SE3");
-        const data = await response.json();
-
-        const rows = data.data.rows;
-        const labels = rows.map(row => row.startTime.slice(11, 16)); // HH:MM
-        const prices = rows.map(row => row.columns[0].value);
-
-        const ctx = document.getElementById("priceChart").getContext("2d");
-        new Chart(ctx, {
-          type: "line",
-          data: {
-            labels: labels,
-            datasets: [{
-              label: "Pris (SEK/MWh)",
-              data: prices,
-              borderColor: "blue",
-              backgroundColor: "rgba(0, 0, 255, 0.1)",
-              fill: true,
-              tension: 0.3,
-              pointRadius: 2
-            }]
-          },
-          options: {
-            responsive: true,
-            scales: {
-              y: {
-                beginAtZero: true,
-                title: {
-                  display: true,
-                  text: "SEK/MWh"
-                }
-              },
-              x: {
-                title: {
-                  display: true,
-                  text: "Tid (timme)"
-                }
-              }
-            },
-            plugins: {
-              legend: {
-                display: true,
-                position: "top"
-              }
-            }
-          }
-        });
-      } catch (error) {
-        document.getElementById("chart-container").innerHTML = "<p style='text-align:center;color:red;'>Kunde inte hämta data från Nord Pool.</p>";
-        console.error("Fel vid hämtning av data:", error);
-      }
-    }
-
-    fetchPrices();
-  </script>
-</body>
-</html>
+    const labels = 
