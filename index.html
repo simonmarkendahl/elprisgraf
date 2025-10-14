@@ -44,7 +44,7 @@
         .filter(p => typeof p.SEK_per_kWh === 'number')
         .map(p => {
           const time = new Date(p.time_start);
-          const label = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          const label = time.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', hour12: false });
           const price = p.SEK_per_kWh * 100;
           let color = "rgba(0, 0, 255, 0.6)";
           if (price > 100) color = "rgba(255, 0, 0, 0.6)";
@@ -68,7 +68,7 @@
         document.getElementById("rubrik").innerText = `Elpris SE3 – Idag (${avg} öre/kWh i snitt)`;
 
         const now = new Date();
-        const currentLabel = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const currentLabel = now.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', hour12: false });
         const currentIndex = labels.indexOf(currentLabel);
 
         new Chart(document.getElementById("priceChart"), {
