@@ -2,7 +2,7 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8">
-  <title>Elpris SE3 – Dagens Spotpriser</title>
+  <title>Elpris SE3 – Idag & Imorgon</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -21,39 +21,70 @@
   </style>
 </head>
 <body>
-  <h1>Elpris SE3 – Spotpriser idag</h1>
+  <h1 id="rubrik">Elpris SE3 – Spotpriser</h1>
   <div id="chart-container">
     <canvas id="priceChart"></canvas>
   </div>
 
   <script>
-    async function fetchPrices() {
+    async function fetchPrices(dateStr) {
+      const url = `https://www.elprisetjustnu.se/api/v1/prices/${dateStr}_SE3.json`;
+      const response = await fetch(url);
+      return await response.json();
+    }
+
+    async function renderChart() {
       const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
+
       const yyyy = today.getFullYear();
       const mm = String(today.getMonth() + 1).padStart(2, '0');
       const dd = String(today.getDate()).padStart(2, '0');
-      const url = `https://www.elprisetjustnu.se/api/v1/prices/${yyyy}/${mm}-${dd}_SE3.json`;
+      const ddTomorrow = String(tomorrow.getDate()).padStart(2, '0');
+
+      const todayStr = `${yyyy}/${mm}-${dd}`;
+      const tomorrowStr = `${yyyy}/${mm}-${ddTomorrow}`;
 
       try {
-        const response = await fetch(url);
-        const data = await response.json();
+        const [todayData, tomorrowData] = await Promise.all([
+          fetchPrices(todayStr),
+          fetchPrices(tomorrowStr)
+        ]);
 
-        const labels = data.map(p => p.time);
-        const prices = data.map(p => p.SEK_per_kWh);
+        const labels = todayData.map(p => p.time);
+        const todayPrices = todayData.map(p => p.SEK_per_kWh * 100);
+        const tomorrowPrices = tomorrowData.map(p => p.SEK_per_kWh * 100);
+
+        const avgToday = (todayPrices.reduce((a, b) => a + b, 0) / todayPrices.length).toFixed(2);
+        const avgTomorrow = (tomorrowPrices.reduce((a, b) => a + b, 0) / tomorrowPrices.length).toFixed(2);
+
+        document.getElementById("rubrik").innerText = `Elpris SE3 – Idag (${avgToday} öre/kWh) & Imorgon (${avgTomorrow} öre/kWh)`;
 
         new Chart(document.getElementById("priceChart"), {
           type: "line",
           data: {
             labels: labels,
-            datasets: [{
-              label: "SE3 Spotpris (öre/kWh)",
-              data: prices.map(p => p * 100),
-              borderColor: "blue",
-              backgroundColor: "rgba(0, 0, 255, 0.1)",
-              fill: true,
-              tension: 0.3,
-              pointRadius: 2
-            }]
+            datasets: [
+              {
+                label: "Idag",
+                data: todayPrices,
+                borderColor: "blue",
+                backgroundColor: "rgba(0, 0, 255, 0.1)",
+                fill: true,
+                tension: 0.3,
+                pointRadius: 2
+              },
+              {
+                label: "Imorgon",
+                data: tomorrowPrices,
+                borderColor: "green",
+                backgroundColor: "rgba(0, 255, 0, 0.1)",
+                fill: true,
+                tension: 0.3,
+                pointRadius: 2
+              }
+            ]
           },
           options: {
             responsive: true,
@@ -81,12 +112,12 @@
           }
         });
       } catch (error) {
-        document.getElementById("chart-container").innerHTML = "<p style='text-align:center;color:red;'>Kunde inte hämta data från elprisetjustnu.se.</p>";
+        document.getElementById("chart-container").innerHTML = "<p style='text-align:center;color:red;'>Kunde inte hämta data.</p>";
         console.error("Fel vid hämtning av data:", error);
       }
     }
 
-    fetchPrices();
+    renderChart();
   </script>
 </body>
 </html>
