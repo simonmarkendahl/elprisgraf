@@ -24,7 +24,7 @@
     }
     canvas {
       display: block;
-      height: 600px;
+      width: 100%;
     }
   </style>
 </head>
@@ -81,6 +81,10 @@
 
     async function renderChart() {
       try {
+        const canvas = document.getElementById("priceChart");
+        canvas.height = 600;
+        canvas.width = canvas.offsetWidth;
+
         const today = new Date();
         const tomorrow = new Date(today);
         tomorrow.setDate(today.getDate() + 1);
@@ -189,7 +193,7 @@
           chartInstance.destroy();
         }
 
-        chartInstance = new Chart(document.getElementById("priceChart"), config);
+        chartInstance = new Chart(canvas, config);
 
       } catch (error) {
         document.getElementById("chart-container").innerHTML =
