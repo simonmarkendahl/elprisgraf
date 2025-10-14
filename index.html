@@ -77,8 +77,8 @@
         const tomorrow = new Date(today);
         tomorrow.setDate(today.getDate() + 1);
 
-        const labelsToday = generateTimeLabels(today, 48); // 12:00
-        const labelsTomorrow = generateTimeLabels(tomorrow, 48); // 12:00
+        const labelsToday = generateTimeLabels(today, 48); // datum under kl 12:00
+        const labelsTomorrow = generateTimeLabels(tomorrow, 48);
         const allLabels = [...labelsToday, ...labelsTomorrow];
 
         const pricesToday = await fetchPrices(today);
@@ -105,7 +105,7 @@
           minute: '2-digit',
           hour12: false
         });
-        const currentIndex = allLabels.findIndex(l => l.startsWith(timeLabel) && allLabels.indexOf(l) < 96);
+        const currentIndex = allLabels.findIndex((l, i) => l.startsWith(timeLabel) && i < 96);
 
         const config = {
           type: "bar",
