@@ -28,7 +28,7 @@
   <script>
     let chartInstance = null;
 
-    function generateTimeLabels(date) {
+    function generateTimeLabels(date, showDateAtIndex) {
       const labels = [];
       const base = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
       const dateLabel = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -39,7 +39,7 @@
           minute: '2-digit',
           hour12: false
         });
-        labels.push(`${timeLabel}\n${dateLabel}`);
+        labels.push(i === showDateAtIndex ? `${timeLabel}\n${dateLabel}` : timeLabel);
       }
       return labels;
     }
@@ -77,22 +77,17 @@
         const tomorrow = new Date(today);
         tomorrow.setDate(today.getDate() + 1);
 
-        const labelsToday = generateTimeLabels(today);
-        const labelsTomorrow = generateTimeLabels(tomorrow);
+        const labelsToday = generateTimeLabels(today, 48); // 12:00
+        const labelsTomorrow = generateTimeLabels(tomorrow, 48); // 12:00
         const allLabels = [...labelsToday, ...labelsTomorrow];
 
         const pricesToday = await fetchPrices(today);
         const pricesTomorrow = await fetchPrices(tomorrow);
 
-        const prices = allLabels.map(label => {
+        const prices = allLabels.map((label, i) => {
           const timePart = label.split("\n")[0];
-          const datePart = label.split("\n")[1];
-          if (datePart === `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}`) {
-            return pricesToday[timePart] ?? 0;
-          } else if (datePart === `${String(tomorrow.getDate()).padStart(2, '0')}/${String(tomorrow.getMonth() + 1).padStart(2, '0')}`) {
-            return pricesTomorrow[timePart] ?? 0;
-          }
-          return 0;
+          if (i < 96) return pricesToday[timePart] ?? 0;
+          else return pricesTomorrow[timePart] ?? 0;
         });
 
         const colors = prices.map(p => {
@@ -110,9 +105,7 @@
           minute: '2-digit',
           hour12: false
         });
-        const dateLabel = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}`;
-        const currentLabel = `${timeLabel}\n${dateLabel}`;
-        const currentIndex = allLabels.indexOf(currentLabel);
+        const currentIndex = allLabels.findIndex(l => l.startsWith(timeLabel) && allLabels.indexOf(l) < 96);
 
         const config = {
           type: "bar",
