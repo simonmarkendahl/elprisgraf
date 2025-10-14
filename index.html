@@ -28,17 +28,18 @@
   <script>
     let chartInstance = null;
 
-    function generateTimeLabels(date, suffix) {
+    function generateTimeLabels(date) {
       const labels = [];
       const base = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
+      const dateLabel = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
       for (let i = 0; i < 96; i++) {
         const time = new Date(base.getTime() + i * 15 * 60 * 1000);
-        const label = time.toLocaleTimeString('sv-SE', {
+        const timeLabel = time.toLocaleTimeString('sv-SE', {
           hour: '2-digit',
           minute: '2-digit',
           hour12: false
-        }) + suffix;
-        labels.push(label);
+        });
+        labels.push(`${timeLabel}\n${dateLabel}`);
       }
       return labels;
     }
@@ -76,17 +77,21 @@
         const tomorrow = new Date(today);
         tomorrow.setDate(today.getDate() + 1);
 
-        const labelsToday = generateTimeLabels(today, " (idag)");
-        const labelsTomorrow = generateTimeLabels(tomorrow, " (imorgon)");
+        const labelsToday = generateTimeLabels(today);
+        const labelsTomorrow = generateTimeLabels(tomorrow);
         const allLabels = [...labelsToday, ...labelsTomorrow];
 
         const pricesToday = await fetchPrices(today);
         const pricesTomorrow = await fetchPrices(tomorrow);
 
         const prices = allLabels.map(label => {
-          const baseLabel = label.slice(0, 5); // "HH:mm"
-          if (label.includes("idag")) return pricesToday[baseLabel] ?? 0;
-          if (label.includes("imorgon")) return pricesTomorrow[baseLabel] ?? 0;
+          const timePart = label.split("\n")[0];
+          const datePart = label.split("\n")[1];
+          if (datePart === `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}`) {
+            return pricesToday[timePart] ?? 0;
+          } else if (datePart === `${String(tomorrow.getDate()).padStart(2, '0')}/${String(tomorrow.getMonth() + 1).padStart(2, '0')}`) {
+            return pricesTomorrow[timePart] ?? 0;
+          }
           return 0;
         });
 
@@ -100,11 +105,13 @@
         // Nu-streck
         const now = new Date();
         const rounded = new Date(Math.floor(now.getTime() / (15 * 60 * 1000)) * (15 * 60 * 1000));
-        const currentLabel = rounded.toLocaleTimeString('sv-SE', {
+        const timeLabel = rounded.toLocaleTimeString('sv-SE', {
           hour: '2-digit',
           minute: '2-digit',
           hour12: false
-        }) + " (idag)";
+        });
+        const dateLabel = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}`;
+        const currentLabel = `${timeLabel}\n${dateLabel}`;
         const currentIndex = allLabels.indexOf(currentLabel);
 
         const config = {
@@ -165,6 +172,13 @@
                 },
                 grid: {
                   display: false
+                },
+                ticks: {
+                  callback: function(value) {
+                    return this.getLabelForValue(value).split("\n");
+                  },
+                  maxRotation: 0,
+                  minRotation: 0
                 }
               }
             }
