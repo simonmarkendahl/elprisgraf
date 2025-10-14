@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Elprisgraf SE3</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { margin: 0; padding: 0; background: #fff; }
+    canvas { width: 100vw; height: 100vh; }
+  </style>
+</head>
+<body>
+  <canvas id="priceChart"></canvas>
+  <script>
+    async function fetchPrices() {
+      const response = await fetch("https://data.nordpoolgroup.com/auction/day-ahead/prices?deliveryDate=today&currency=SEK&aggregation=DeliveryPeriod&deliveryAreas=SE3");
+      const data = await response.json();
+      const prices = data.data.rows.map(row => row.columns[0].value);
+      const labels = data.data.rows.map(row => row.startTime.slice(11, 16)); // HH:MM
+
+      new Chart(document.getElementById("priceChart"), {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Elpris SE3 (SEK/MWh)",
+            data: prices,
+            borderColor: "blue",
+            backgroundColor: "rgba(0, 0, 255, 0.1)",
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
+    fetchPrices();
+  </script>
+</body>
+</html>
