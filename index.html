@@ -42,10 +42,11 @@
       const raw = await response.json();
       const data = raw
         .filter(p => typeof p.SEK_per_kWh === 'number')
-        .map(p => ({
-          time: p.time,
-          price: p.SEK_per_kWh * 100
-        }));
+        .map(p => {
+          const time = new Date(p.time_start);
+          const label = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          return { label, price: p.SEK_per_kWh * 100 };
+        });
 
       if (data.length === 0) throw new Error("Ingen giltig prisdata tillgänglig");
 
@@ -55,15 +56,15 @@
     async function renderChart() {
       try {
         const data = await fetchLivePrices();
-        const labels = data.map(p => p.time);
+        const labels = data.map(p => p.label);
         const prices = data.map(p => p.price);
         const avg = (prices.reduce((a, b) => a + b, 0) / prices.length).toFixed(2);
 
         document.getElementById("rubrik").innerText = `Elpris SE3 – Idag (${avg} öre/kWh i snitt)`;
 
         const now = new Date();
-        const currentHour = now.getHours().toString().padStart(2, '0') + ":00";
-        const currentIndex = labels.indexOf(currentHour);
+        const currentLabel = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const currentIndex = labels.indexOf(currentLabel);
 
         new Chart(document.getElementById("priceChart"), {
           type: "bar",
