@@ -13,9 +13,6 @@
       padding: 20px;
       background: #f9f9f9;
     }
-    h1 {
-      text-align: center;
-    }
     #chart-container {
       width: 80%;
       max-width: 800px;
@@ -24,13 +21,27 @@
   </style>
 </head>
 <body>
-  <h1 id="rubrik">Elpris SE3 – Idag & Imorgon</h1>
   <div id="chart-container">
     <canvas id="priceChart"></canvas>
   </div>
 
   <script>
     let chartInstance = null;
+
+    function generateTimeLabels(date) {
+      const labels = [];
+      const base = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
+      for (let i = 0; i < 96; i++) {
+        const time = new Date(base.getTime() + i * 15 * 60 * 1000);
+        const label = time.toLocaleTimeString('sv-SE', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+        labels.push(label);
+      }
+      return labels;
+    }
 
     async function fetchPrices(date) {
       const yyyy = date.getFullYear();
@@ -42,23 +53,20 @@
         const response = await fetch(url);
         if (!response.ok) throw new Error("Ingen data");
         const raw = await response.json();
-        return raw
-          .filter(p => typeof p.SEK_per_kWh === 'number')
-          .map(p => {
-            const time = new Date(p.time_start);
-            const label = time.toLocaleTimeString('sv-SE', {
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: false
-            });
-            const price = p.SEK_per_kWh * 100;
-            let color = "rgba(0, 0, 255, 0.6)";
-            if (price > 100) color = "rgba(255, 0, 0, 0.6)";
-            else if (price >= 50) color = "rgba(255, 165, 0, 0.6)";
-            return { label, price, color };
+        const map = {};
+        raw.forEach(p => {
+          const time = new Date(p.time_start);
+          const label = time.toLocaleTimeString('sv-SE', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
           });
+          const price = p.SEK_per_kWh * 100;
+          map[label] = price;
+        });
+        return map;
       } catch {
-        return [];
+        return {};
       }
     }
 
@@ -68,22 +76,23 @@
         const tomorrow = new Date(today);
         tomorrow.setDate(today.getDate() + 1);
 
-        const dataToday = await fetchPrices(today);
-        const dataTomorrow = await fetchPrices(tomorrow);
+        const labelsToday = generateTimeLabels(today);
+        const labelsTomorrow = generateTimeLabels(tomorrow);
+        const allLabels = [...labelsToday, ...labelsTomorrow];
 
-        const labels = [...dataToday.map(p => p.label), ...dataTomorrow.map(p => p.label)];
-        const prices = [...dataToday.map(p => p.price), ...dataTomorrow.map(p => p.price)];
-        const colors = [...dataToday.map(p => p.color), ...dataTomorrow.map(p => p.color)];
+        const pricesToday = await fetchPrices(today);
+        const pricesTomorrow = await fetchPrices(tomorrow);
 
-        const avgToday = dataToday.length > 0
-          ? (dataToday.reduce((a, b) => a + b.price, 0) / dataToday.length).toFixed(2)
-          : "–";
-        const avgTomorrow = dataTomorrow.length > 0
-          ? (dataTomorrow.reduce((a, b) => a + b.price, 0) / dataTomorrow.length).toFixed(2)
-          : "–";
+        const prices = allLabels.map(label =>
+          pricesToday[label] ?? pricesTomorrow[label] ?? 0
+        );
 
-        document.getElementById("rubrik").innerText =
-          `Elpris SE3 – Idag (${avgToday} öre/kWh) & Imorgon (${avgTomorrow} öre/kWh)`;
+        const colors = prices.map(p => {
+          if (p === 0) return "rgba(200,200,200,0.3)";
+          if (p > 100) return "rgba(255, 0, 0, 0.6)";
+          if (p >= 50) return "rgba(255, 165, 0, 0.6)";
+          return "rgba(0, 0, 255, 0.6)";
+        });
 
         // Nu-streck
         const now = new Date();
@@ -93,12 +102,12 @@
           minute: '2-digit',
           hour12: false
         });
-        const currentIndex = labels.indexOf(currentLabel);
+        const currentIndex = allLabels.indexOf(currentLabel);
 
         const config = {
           type: "bar",
           data: {
-            labels: labels,
+            labels: allLabels,
             datasets: [{
               label: "Spotpris (öre/kWh)",
               data: prices,
@@ -114,8 +123,7 @@
             },
             plugins: {
               legend: {
-                display: true,
-                position: "top"
+                display: false
               },
               annotation: {
                 annotations: currentIndex >= 0 ? {
