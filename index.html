@@ -28,7 +28,7 @@
   <script>
     let chartInstance = null;
 
-    function generateTimeLabels(date) {
+    function generateTimeLabels(date, suffix) {
       const labels = [];
       const base = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
       for (let i = 0; i < 96; i++) {
@@ -37,7 +37,7 @@
           hour: '2-digit',
           minute: '2-digit',
           hour12: false
-        });
+        }) + suffix;
         labels.push(label);
       }
       return labels;
@@ -76,16 +76,19 @@
         const tomorrow = new Date(today);
         tomorrow.setDate(today.getDate() + 1);
 
-        const labelsToday = generateTimeLabels(today);
-        const labelsTomorrow = generateTimeLabels(tomorrow);
+        const labelsToday = generateTimeLabels(today, " (idag)");
+        const labelsTomorrow = generateTimeLabels(tomorrow, " (imorgon)");
         const allLabels = [...labelsToday, ...labelsTomorrow];
 
         const pricesToday = await fetchPrices(today);
         const pricesTomorrow = await fetchPrices(tomorrow);
 
-        const prices = allLabels.map(label =>
-          pricesToday[label] ?? pricesTomorrow[label] ?? 0
-        );
+        const prices = allLabels.map(label => {
+          const baseLabel = label.slice(0, 5); // "HH:mm"
+          if (label.includes("idag")) return pricesToday[baseLabel] ?? 0;
+          if (label.includes("imorgon")) return pricesTomorrow[baseLabel] ?? 0;
+          return 0;
+        });
 
         const colors = prices.map(p => {
           if (p === 0) return "rgba(200,200,200,0.3)";
@@ -101,7 +104,7 @@
           hour: '2-digit',
           minute: '2-digit',
           hour12: false
-        });
+        }) + " (idag)";
         const currentIndex = allLabels.indexOf(currentLabel);
 
         const config = {
