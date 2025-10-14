@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Elpris SE3 – Idag</title>
+  <title>Elpris SE3 – Idag & Imorgon</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.2.2"></script>
   <style>
@@ -17,13 +17,14 @@
       text-align: center;
     }
     #chart-container {
-      max-width: 1000px;
-      margin: auto;
+      width: 80%;
+      max-width: 800px;
+      margin: 0 auto;
     }
   </style>
 </head>
 <body>
-  <h1 id="rubrik">Elpris SE3 – Spotpriser idag</h1>
+  <h1 id="rubrik">Elpris SE3 – Idag & Imorgon</h1>
   <div id="chart-container">
     <canvas id="priceChart"></canvas>
   </div>
@@ -31,49 +32,60 @@
   <script>
     let chartInstance = null;
 
-    async function fetchLivePrices() {
-      const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, '0');
-      const dd = String(today.getDate()).padStart(2, '0');
+    async function fetchPrices(date) {
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
       const url = `https://www.elprisetjustnu.se/api/v1/prices/${yyyy}/${mm}-${dd}_SE3.json`;
 
-      const response = await fetch(url);
-      if (!response.ok) throw new Error("API-svar misslyckades");
-
-      const raw = await response.json();
-      const data = raw
-        .filter(p => typeof p.SEK_per_kWh === 'number')
-        .map(p => {
-          const time = new Date(p.time_start);
-          const label = time.toLocaleTimeString('sv-SE', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Ingen data");
+        const raw = await response.json();
+        return raw
+          .filter(p => typeof p.SEK_per_kWh === 'number')
+          .map(p => {
+            const time = new Date(p.time_start);
+            const label = time.toLocaleTimeString('sv-SE', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false
+            });
+            const price = p.SEK_per_kWh * 100;
+            let color = "rgba(0, 0, 255, 0.6)";
+            if (price > 100) color = "rgba(255, 0, 0, 0.6)";
+            else if (price >= 50) color = "rgba(255, 165, 0, 0.6)";
+            return { label, price, color };
           });
-          const price = p.SEK_per_kWh * 100;
-          let color = "rgba(0, 0, 255, 0.6)";
-          if (price > 100) color = "rgba(255, 0, 0, 0.6)";
-          else if (price >= 50) color = "rgba(255, 165, 0, 0.6)";
-          return { label, price, color };
-        });
-
-      if (data.length === 0) throw new Error("Ingen giltig prisdata tillgänglig");
-
-      return data;
+      } catch {
+        return [];
+      }
     }
 
     async function renderChart() {
       try {
-        const data = await fetchLivePrices();
-        const labels = data.map(p => p.label);
-        const prices = data.map(p => p.price);
-        const colors = data.map(p => p.color);
-        const avg = (prices.reduce((a, b) => a + b, 0) / prices.length).toFixed(2);
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
 
-        document.getElementById("rubrik").innerText = `Elpris SE3 – Idag (${avg} öre/kWh i snitt)`;
+        const dataToday = await fetchPrices(today);
+        const dataTomorrow = await fetchPrices(tomorrow);
 
-        // Avrunda till närmaste kvart
+        const labels = [...dataToday.map(p => p.label), ...dataTomorrow.map(p => p.label)];
+        const prices = [...dataToday.map(p => p.price), ...dataTomorrow.map(p => p.price)];
+        const colors = [...dataToday.map(p => p.color), ...dataTomorrow.map(p => p.color)];
+
+        const avgToday = dataToday.length > 0
+          ? (dataToday.reduce((a, b) => a + b.price, 0) / dataToday.length).toFixed(2)
+          : "–";
+        const avgTomorrow = dataTomorrow.length > 0
+          ? (dataTomorrow.reduce((a, b) => a + b.price, 0) / dataTomorrow.length).toFixed(2)
+          : "–";
+
+        document.getElementById("rubrik").innerText =
+          `Elpris SE3 – Idag (${avgToday} öre/kWh) & Imorgon (${avgTomorrow} öre/kWh)`;
+
+        // Nu-streck
         const now = new Date();
         const rounded = new Date(Math.floor(now.getTime() / (15 * 60 * 1000)) * (15 * 60 * 1000));
         const currentLabel = rounded.toLocaleTimeString('sv-SE', {
@@ -95,6 +107,11 @@
           },
           options: {
             responsive: true,
+            layout: {
+              padding: {
+                bottom: 0
+              }
+            },
             plugins: {
               legend: {
                 display: true,
@@ -150,7 +167,8 @@
         chartInstance = new Chart(document.getElementById("priceChart"), config);
 
       } catch (error) {
-        document.getElementById("chart-container").innerHTML = `<p style='text-align:center;color:red;'>Kunde inte hämta live-data: ${error.message}</p>`;
+        document.getElementById("chart-container").innerHTML =
+          `<p style='text-align:center;color:red;'>Kunde inte hämta prisdata: ${error.message}</p>`;
         console.error("Fel vid hämtning av data:", error);
       }
     }
