@@ -102,7 +102,7 @@
               },
               annotation: {
                 annotations: currentIndex >= 0 ? {
-                  line1: {
+                  nowLine: {
                     type: 'line',
                     xMin: currentIndex,
                     xMax: currentIndex,
@@ -111,7 +111,9 @@
                     label: {
                       content: 'Nu',
                       enabled: true,
-                      position: 'start'
+                      position: 'start',
+                      backgroundColor: 'rgba(255,0,0,0.2)',
+                      color: 'black'
                     }
                   }
                 } : {}
