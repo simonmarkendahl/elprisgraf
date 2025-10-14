@@ -101,22 +101,7 @@
                 position: "top"
               },
               annotation: {
-                annotations: currentIndex >= 0 ? {
-                  nowLine: {
-                    type: 'line',
-                    xMin: currentIndex,
-                    xMax: currentIndex,
-                    borderColor: 'red',
-                    borderWidth: 2,
-                    label: {
-                      content: 'Nu',
-                      enabled: true,
-                      position: 'start',
-                      backgroundColor: 'rgba(255,0,0,0.2)',
-                      color: 'black'
-                    }
-                  }
-                } : {}
+                annotations: {}
               }
             },
             scales: {
@@ -140,7 +125,28 @@
         if (chartInstance) {
           chartInstance.destroy();
         }
+
         chartInstance = new Chart(document.getElementById("priceChart"), config);
+
+        // Lägg till "Nu"-streck efter att grafen är skapad
+        if (currentIndex >= 0) {
+          chartInstance.options.plugins.annotation.annotations.nowLine = {
+            type: 'line',
+            xMin: currentIndex,
+            xMax: currentIndex,
+            borderColor: 'red',
+            borderWidth: 2,
+            label: {
+              content: 'Nu',
+              enabled: true,
+              position: 'start',
+              backgroundColor: 'rgba(255,0,0,0.2)',
+              color: 'black'
+            }
+          };
+          chartInstance.update();
+        }
+
       } catch (error) {
         document.getElementById("chart-container").innerHTML = `<p style='text-align:center;color:red;'>Kunde inte hämta live-data: ${error.message}</p>`;
         console.error("Fel vid hämtning av data:", error);
