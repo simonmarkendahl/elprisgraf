@@ -66,17 +66,13 @@
         const currentIndex = labels.indexOf(currentHour);
 
         new Chart(document.getElementById("priceChart"), {
-          type: "line",
+          type: "bar",
           data: {
             labels: labels,
             datasets: [{
               label: "Spotpris (öre/kWh)",
               data: prices,
-              borderColor: "blue",
-              backgroundColor: "rgba(0, 0, 255, 0.1)",
-              fill: true,
-              tension: 0.3,
-              pointRadius: 2
+              backgroundColor: "rgba(0, 0, 255, 0.6)"
             }]
           },
           options: {
